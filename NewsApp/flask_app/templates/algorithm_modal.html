@@ -1,0 +1,30 @@
+<div class="modal fade" id="algorithmModal" tabindex="-1" aria-labelledby="algorithmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="algorithmModalLabel">Chọn thuật toán gợi ý</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('set_algorithm') }}" method="POST">
+                <div class="modal-body">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="algorithm" id="tfidf" value="tfidf" {% if session.get('selected_algorithm', 'tfidf') == 'tfidf' %}checked{% endif %}>
+                        <label class="form-check-label" for="tfidf">TF-IDF</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="algorithm" id="bert" value="bert" {% if session.get('selected_algorithm') == 'bert' %}checked{% endif %}>
+                        <label class="form-check-label" for="bert">BERT</label>
+                    </div>
+                    <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" name="use_time_ranking" id="use_time_ranking" value="yes" {% if session.get('use_time_ranking', True) %}checked{% endif %}>
+                        <label class="form-check-label" for="use_time_ranking">Xếp hạng theo thời gian xuất bản</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-primary">Áp dụng</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Trang chủ - Ứng dụng đọc báo | 🌤 {{ weather.temp }}°C - {{ weather.description }}
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Tin tức mới nhất</h2>
+    <span class="badge bg-secondary">⚙️ {{ algorithm_name }}</span>
+    <button class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#algorithmModal">
+        🧠 Chọn thuật toán
+    </button>
+</div>
+
+<!-- Modal để chọn thuật toán và tùy chọn thời gian -->
+{% include "algorithm_modal.html" %}
+
+<div class="list-group">
+    {% for article in articles %}
+    <a href="{{ url_for('article_detail', article_id=article.id) }}" class="list-group-item list-group-item-action d-flex align-items-center">
+        <img src="https://placehold.co/120x80" alt="Hình ảnh bài viết" class="me-3" style="width: 120px; height: 80px; object-fit: cover;">
+        <div>
+            <h5 class="mb-1">{{ article.title }}</h5>
+            <p class="text-muted" style="font/size: 14px;">
+                🕒 {{ article.date_published.strftime('%d/%m/%Y %H:%M') if article.date_published else "Không có ngày đăng" }}
+                | 🔢 Điểm gốc: {{ "%.2f" | format(article.original_score) }}
+                | ⏳ Điểm cuối: {{ "%.2f" | format(article.final_score) }}
+            </p>
+            <p class="mb-1 text-muted">{{ article.lead }}...</p>
+        </div>
+    </a>
+    {% else %}
+    <p class="text-muted">Không có bài viết nào để hiển thị.</p>
+    {% endfor %}
+</div>
+
+{% endblock %}

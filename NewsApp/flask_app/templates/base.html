@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Ứng dụng đọc báo{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">📰 NewsApp</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/categories">Danh mục</a>
+                    </li>
+                </ul>
+
+                <!-- Hiển thị thời tiết -->
+                {% if weather %}
+                <div class="text-white me-3 d-flex align-items-center">
+                    {{ weather.temp }}°C - {{ weather.description }}
+                    {% if weather.icon %}
+                    <img src="{{ weather.icon }}" alt="Weather Icon" class="ms-2" style="width: 30px; height: 30px;">
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Thanh tìm kiếm -->
+                <form class="d-flex me-3" method="GET" action="{{ url_for('search') }}">
+                    <input class="form-control me-1" type="search" name="query" placeholder="Tìm kiếm tin tức..." aria-label="Tìm kiếm">
+                </form>
+
+                {% if current_user.is_authenticated %}
+                    <span class="navbar-text text-white me-3">👤 {{ current_user.username }}</span>
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-danger">Đăng xuất</a>
+                {% else %}
+                    <!-- Nút mở Modal đăng nhập -->
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#loginModal">Đăng nhập</button>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Nội dung chính -->
+    <div class="container mt-4">
+        <!-- Hiển thị bảng tỷ giá -->
+        <div class="card mb-4">
+            <div class="card-header">
+                💱 Tỷ giá Vietcombank
+            </div>
+            <div class="card-body">
+                {% if exchange_rates %}
+                <table class="table table-striped exchange-rate-table">
+                    <thead>
+                        <tr>
+                            <th>Mã</th>
+                            <th>Mua</th>
+                            <th>Chuyển khoản</th>
+                            <th>Bán</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rate in exchange_rates %}
+                        <tr>
+                            <td>{{ rate.code }}</td>
+                            <td>{{ "%.2f" | format(rate.buy) }}</td>
+                            <td>{{ "%.2f" | format(rate.transfer) }}</td>
+                            <td>{{ "%.2f" | format(rate.sell) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-muted">Không có dữ liệu tỷ giá.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Hiển thị thông báo -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+<!-- Nút thu nhỏ Chatbot -->
+<button id="chatbot-toggle" class="chatbot-toggle-btn">
+    💬
+</button>
+
+<!-- Chatbot Widget -->
+<div class="chatbot-widget" id="chatbot-widget">
+    <div class="chatbot-header">
+        <span>Live Support</span>
+        <div class="status online">● Online</div>
+    </div>
+
+    <div class="chatbot-messages" id="chat-messages">
+        <!-- Hiển thị lịch sử trò chuyện -->
+        {% if session.get('chat_history') %}
+            {% for message in session.get('chat_history') %}
+                <div class="chat-message {{ 'user' if message.role == 'user' else 'bot' }}">
+                    <div class="message-content">
+                        <p>{{ message.content }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <form id="chat-form" class="chatbot-input" method="POST" action="{{ url_for('global_chat') }}">
+        <input type="text" id="user-message" name="message" placeholder="Viết tin nhắn..." required autocomplete="off">
+        <button type="submit">➤</button>
+    </form>
+</div>
+
+<!-- CSS và JS -->
+<style>
+    /* Nút thu nhỏ Chatbot */
+    .chatbot-toggle-btn {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        background-color: #007bff;
+        color: white;
+        border-radius: 50%;
+        border: none;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        font-size: 24px;
+        cursor: pointer;
+        z-index: 1000;
+    }
+
+    /* Chatbot Widget */
+    .chatbot-widget {
+        position: fixed;
+        bottom: 90px;
+        right: 20px;
+        width: 350px;
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+        display: none;
+        flex-direction: column;
+        font-family: Arial, sans-serif;
+        z-index: 9999;
+    }
+
+    .chatbot-header {
+        background-color: #333;
+        color: white;
+        padding: 15px;
+        font-weight: bold;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .status.online {
+        color: #28a745;
+        font-size: 0.9em;
+    }
+
+    .chatbot-messages {
+        padding: 15px;
+        height: 500px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        background-color: #f5f5f5;
+    }
+
+    .chat-message {
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+    }
+
+    .chat-message.user {
+        justify-content: flex-end;
+    }
+
+    .chat-message.bot {
+        justify-content: flex-start;
+    }
+
+    .chat-message .avatar img {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+    }
+
+    .message-content {
+        background-color: #f1f1f1;
+        padding: 10px;
+        border-radius: 10px;
+        max-width: 70%;
+    }
+
+    .chat-message.user .message-content {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .chat-message.bot .message-content {
+        background-color: #e0e0e0;
+        color: black;
+    }
+
+    .chatbot-input {
+        display: flex;
+        padding: 10px;
+        background-color: #fff;
+        border-top: 1px solid #ccc;
+    }
+
+    .chatbot-input input {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        margin-right: 10px;
+        outline: none;
+    }
+
+    .chatbot-input button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .chatbot-input button:hover {
+        background-color: #0056b3;
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const chatToggleButton = document.getElementById("chatbot-toggle");
+        const chatWidget = document.getElementById("chatbot-widget");
+        const chatForm = document.getElementById("chat-form");
+        const chatMessages = document.getElementById("chat-messages");
+        const userMessageInput = document.getElementById("user-message");
+
+        // Mở hoặc thu nhỏ chatbot
+        chatToggleButton.addEventListener("click", function () {
+            if (chatWidget.style.display === "flex") {
+                chatWidget.style.display = "none";
+            } else {
+                chatWidget.style.display = "flex";
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        });
+
+        // Gửi tin nhắn
+        chatForm.addEventListener("submit", function (event) {
+            event.preventDefault();
+            const message = userMessageInput.value.trim();
+            if (message === "") return;
+
+            // Lấy URL hiện tại
+            const currentUrl = window.location.href;
+
+            // Hiển thị tin nhắn người dùng
+            addMessageToChat("user", message);
+
+            // Gửi yêu cầu tới server
+            fetch("/chatbot", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                body: `message=${encodeURIComponent(message)}&current_url=${encodeURIComponent(currentUrl)}`
+            })
+                .then(response => response.json())
+                .then(data => {
+                    addMessageToChat("bot", data.bot_response);
+                });
+
+            userMessageInput.value = "";
+        });
+
+        // Thêm tin nhắn vào giao diện
+        function addMessageToChat(role, content) {
+            const messageElement = document.createElement("div");
+            messageElement.classList.add("chat-message", role);
+
+            messageElement.innerHTML = `
+                <div class="avatar">
+                    <img src="${role === "user" ? '/static/images/user.png' : '/static/images/bot.png'}" alt="${role}">
+                </div>
+                <div class="message-content">
+                    <p>${content}</p>
+                </div>
+            `;
+
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

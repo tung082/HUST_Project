@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Kết quả tìm kiếm: {{ query }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <h1>Kết quả tìm kiếm cho: "{{ query }}"</h1>
+    {% if results|length > 0 %}
+        <ul>
+        {% for article in results %}
+            <li>
+                <a href="{{ article.url }}">{{ article.title }}</a>
+                <p>{{ article.lead }}</p>
+                <small>Ngày đăng: {{ article.date_published }} | Độ tương đồng: {{ article.similarity_score|round(2) }}</small>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>Không tìm thấy bài viết nào phù hợp với "{{ query }}".</p>
+    {% endif %}
+    <a href="{{ url_for('index') }}">Quay lại trang chủ</a>
+</body>
+</html>
